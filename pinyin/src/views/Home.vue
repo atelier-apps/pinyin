@@ -1,6 +1,5 @@
 <template>
 <div class="home">
-  <img alt="Vue logo" src="../assets/logo.png">
   <ProtoScreen msg="Find me in Hone.vue" />
 </div>
 </template>
