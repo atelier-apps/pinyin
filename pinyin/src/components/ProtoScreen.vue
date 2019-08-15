@@ -2,11 +2,12 @@
 <div class="hello">
   <h1>画面のプロトタイプ</h1>
   <div>
-    <input v-model="kanji">
+    <input v-bind:class="{ 'alert-color' : isError}" v-model="kanji">
+    <p v-if="isError" class="alert-text"> {{errorMsg}}</p>
   </div>
   <div>
     <p>中国語読み</p>
-    <p>{{kanji}}</p>
+    <p>{{judge}}</p>
   </div>
   <div>
     <p>日本語読み</p>
@@ -19,14 +20,22 @@
 import axios from 'axios'
 
 export default {
-  name: 'HelloWorld',
+  name: 'PostScreen',
   props: {
     msg: String
   },
   data: () => ({
     piyo: "hi!",
     kanji: '',
+    judge: 'kanji',
+    errorMsg: '漢字かローマ字を入力してください。',
   }),
+  computed: {
+    isError: function() {
+      return !(this.kanji.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) 
+        || this.kanji.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
+    }
+  },
   methods: {
     hoge: function() {
       let params = new URLSearchParams();
@@ -60,5 +69,13 @@ li {
 
 a {
   color: #42b983;
+}
+
+.alert-color {
+  border-color: red;
+}
+
+.alert-text {
+  color: red;
 }
 </style>
