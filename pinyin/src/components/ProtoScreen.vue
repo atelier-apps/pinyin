@@ -3,8 +3,8 @@
   <h1>{{app_name}}</h1>
   <div>
     <p> {{headerMsg}}</p>
-    <input v-on:input="hoge" v-bind:class="{ 'alert-color' : isError}" v-model="target">
-    <p v-if="isError" class="alert-text"> {{errorMsg}}</p>
+    <input v-on:input="hoge" v-bind:class="{ 'error-border' : isError}" v-model="target">
+    <p v-if="isError" class="error-text"> {{errorMsg}}</p>
   </div>
   <ResultArea title="中国語読み" v-bind:responce="responce_zh" />
   <ResultArea title="日本語読み" v-bind:responce="responce_ja" />
@@ -28,7 +28,7 @@ export default {
     responce_ja: null,
   }),
   computed: {
-    isError: function() {
+    isError() {
       return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) 
         || this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
     }
@@ -96,11 +96,11 @@ a {
   color: #42b983;
 }
 
-.alert-color {
+.error-border {
   border-color: red;
 }
 
-.alert-text {
+.error-text {
   color: red;
 }
 </style>
