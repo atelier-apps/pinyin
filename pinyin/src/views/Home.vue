@@ -1,6 +1,6 @@
 <template>
 <div class="home">
-  <ProtoScreen msg="Find me in Hone.vue" />
+  <ProtoScreen app_name="プロトタイプ" />
 </div>
 </template>
 
