@@ -2,7 +2,9 @@
 <div class="hello">
   <h1>{{app_name}}</h1>
   <div>
-    <input v-on:input="hoge">
+    <p> {{headerMsg}}</p>
+    <input v-on:input="hoge" v-bind:class="{ 'error-input' : isError}" v-model="target">
+    <p v-if="isError" class="error-text"> {{errorMsg}}</p>
   </div>
   <ResultArea title="中国語読み" v-bind:responce="responce['zh']" />
   <ResultArea title="日本語読み" v-bind:responce="responce['ja']" />
@@ -21,11 +23,20 @@ export default {
     app_name: String
   },
   data: () => ({
+    headerMsg: '中国人の名前を漢字かローマ字で入力してください',
+    target: '',
+    errorMsg: '漢字かローマ字を入力してください。',
     responce: {
       ja: null,
       zh: null
     },
   }),
+  computed: {
+    isError() {
+      return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) 
+        || this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
+    }
+  },
   components: {
     ResultArea
   },
@@ -61,5 +72,13 @@ li {
 
 a {
   color: #42b983;
+}
+
+.error-input {
+  border-color: red;
+}
+
+.error-text {
+  color: red;
 }
 </style>
