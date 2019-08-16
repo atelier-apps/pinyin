@@ -3,7 +3,7 @@
   <h1>{{app_name}}</h1>
   <div>
     <p> {{headerMsg}}</p>
-    <input v-on:input="hoge" v-bind:class="{ 'error-border' : isError}" v-model="target">
+    <input v-on:input="hoge" v-bind:class="{ 'error-input' : isError}" v-model="target">
     <p v-if="isError" class="error-text"> {{errorMsg}}</p>
   </div>
   <ResultArea title="中国語読み" v-bind:responce="responce_zh" />
@@ -96,7 +96,7 @@ a {
   color: #42b983;
 }
 
-.error-border {
+.error-input {
   border-color: red;
 }
 
