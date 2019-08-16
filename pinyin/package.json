@@ -6,8 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test:unit": "vue-cli-service test:unit",
-    "precommit": "vue-cli-service test:unit"
+    "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
     "core-js": "^2.6.5",
@@ -31,9 +30,13 @@
     "husky": "^3.0.3",
     "vue-template-compiler": "^2.6.10"
   },
+  "lint-staged": {
+    "*.js": [ "lint" ],
+     "*.vue": [ "lint" ]
+ },
   "husky": {
     "hooks": {
-      "pre-commit": "vue-cli-service test:unit"
+      "pre-commit": "lint-staged && npm run test:unit"
     }
   }
 }
