@@ -6,10 +6,12 @@
     <input v-on:input="hoge" v-bind:class="{ 'error-input' : isError}" v-model="target">
     <p v-if="isError" class="error-text"> {{errorMsg}}</p>
   </div>
-  <ResultArea title="中国語読み" v-bind:responce="responce_zh" />
-  <ResultArea title="日本語読み" v-bind:responce="responce_ja" />
+  <ResultArea title="中国語読み" v-bind:responce="responce['zh']" />
+  <ResultArea title="日本語読み" v-bind:responce="responce['ja']" />
 </div>
 </template>
+
+
 
 <script>
 import axios from 'axios'
@@ -24,8 +26,10 @@ export default {
     headerMsg: '中国人の名前を漢字かローマ字で入力してください',
     target: '',
     errorMsg: '漢字かローマ字を入力してください。',
-    responce_zh: null,
-    responce_ja: null,
+    responce: {
+      ja: null,
+      zh: null
+    },
   }),
   computed: {
     isError() {
@@ -38,39 +42,13 @@ export default {
   },
   methods: {
     hoge: function() {
-      let params = new URLSearchParams();
-      params.append('hellotext', 'Hello Async!');
-      axios.post(process.env.VUE_APP_SERVER_API_URL, params).then((responce) => {
-        console.log(responce.data + ' :async test');
-        this.responce_zh = [{
-            'ruby': 'シー',
-            'main': 'xi',
-          },
-          {
-            'ruby': 'チン',
-            'main': 'jin',
-          },
-          {
-            'ruby': 'ピン',
-            'main': 'ping',
-          },
-        ];
-        this.responce_ja = [{
-            'ruby': 'しゅう',
-            'main': '習',
-          },
-          {
-            'ruby': 'きん',
-            'main': '近',
-          },
-          {
-            'ruby': 'へい',
-            'main': '平',
-          },
-        ];
-      }, (error) => {
-        console.log(error);
-      });
+      var url = "" + process.env.VUE_APP_SERVER_TRANSLATION;
+      this.$jsonp(url, {
+        chineseName: '習近平'
+      }).then(data => {
+        console.log(data);
+        this.responce = data;
+      })
     }
   }
 }
