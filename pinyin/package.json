@@ -31,12 +31,12 @@
     "vue-template-compiler": "^2.6.10"
   },
   "lint-staged": {
-    "*.js": [ "lint", "npm run test:unit" ],
-     "*.vue": [ "lint", "npm run test:unit" ]
+    "*.js": [ "lint" ],
+     "*.vue": [ "lint" ]
  },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged && npm run test:unit"
+      "pre-commit": "lint-staged && yarn run test:unit"
     }
   }
 }
