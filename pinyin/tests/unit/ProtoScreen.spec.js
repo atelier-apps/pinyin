@@ -3,7 +3,7 @@ import ProtoScreen from '../../src/components/ProtoScreen.vue'
 
 // 算出プロパティの"isError"がtarget(文字列)の種類に応じて真偽を返すことをテストする
 test('ProtoScreen', () => {
-  // コンポーネントを描画します
+  // コンポーネントを描画
   const wrapper = shallowMount(ProtoScreen)
 
   // `target`がひらがなのとき、エラーメッセージが表示される。
