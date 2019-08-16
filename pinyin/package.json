@@ -7,7 +7,7 @@
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "test:unit": "vue-cli-service test:unit",
-    "precommit": "npm test"
+    "precommit": "vue-cli-service test:unit"
   },
   "dependencies": {
     "core-js": "^2.6.5",
@@ -33,7 +33,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm test"
+      "pre-commit": "vue-cli-service test:unit"
     }
   }
 }
