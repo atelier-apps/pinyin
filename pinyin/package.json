@@ -30,13 +30,9 @@
     "husky": "^3.0.3",
     "vue-template-compiler": "^2.6.10"
   },
-  "lint-staged": {
-    "*.js": [ "lint" ],
-     "*.vue": [ "lint" ]
- },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged && yarn run test:unit"
+      "pre-commit": "npm run test:unit"
     }
   }
 }
