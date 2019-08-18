@@ -20,7 +20,7 @@ export default {
         return "<div class='block'>ここに結果を表示します</div>";
       }
       let html = "";
-      for (let i = 0; i < r.length; i++) {
+      for (let i in r) {
         html +=
           "<div class='block'>" +
           "<div class='ruby'>" + r[i]["ruby"] + "</div>" +
