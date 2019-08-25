@@ -60,6 +60,14 @@ export default {
       return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) ||
         this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
     },
+    isKanji() {
+      return this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
+      console.log("これは漢字")
+    },
+    isAlpha() {
+      return this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
+      console.log("これはアルファベット")
+    },
     isOverLimit() {
       return this.target.length > this.MAX_LENGTH
     },
@@ -104,13 +112,28 @@ export default {
     },
 
     splitBySyllable: function(chineseName) {
-      let characters = chineseName.split("");
-      let syllables = [];
-      for (let i in characters) {
-        let data = {};
-        data["type"] = "K";
-        data["original"] = characters[i];
-        syllables.push(data);
+    console.log("澤田執筆");
+      if(this.isAlpha){
+        let characters = chineseName.split("");
+        let syllables = [];
+        for (let i in characters) {
+          let data = {};
+          data["type"] = "A";
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
+      }
+      if(this.isKanji){
+        let characters = chineseName.split("");
+        let syllables = [];
+        for (let i in characters) {
+          let data = {};
+          data["type"] = "K";
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
       }
       return syllables;
     }
