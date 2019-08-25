@@ -163,6 +163,6 @@ export default {
 }
 
 .placeholder {
-  color: #dddddd;
+  color: #cccccc;
 }
 </style>
