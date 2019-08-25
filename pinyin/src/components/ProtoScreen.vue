@@ -1,14 +1,28 @@
 <template>
-<div class="hello">
-  <h1>{{app_name}}</h1>
-  <div>
-    <p> {{headerMsg}}</p>
-    <input v-on:input="translate" v-bind:class="{ 'error-input' : isError}" v-model="target">
-    <p v-if="isError" class="error-text"> {{errorMsg}}</p>
-    <p v-if="isOverLimit" class="error-text"> {{lengthErrorMsg}}</p>
+<div class="page">
+  <div class="header">
+    <div class="app-name"> {{app_name}}</div>
+    <div class="header-content">
+      <div class="header-message"> {{headerMsg}}</div>
+      <input class="form" v-on:input="translate" v-bind:class="{ 'error-input' : isError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <div class="error-area">
+        <span v-if="isError"> {{errorMsg}}</span>
+        <span v-if="isOverLimit"> {{lengthErrorMsg}}</span>
+
+      </div>
+    </div>
   </div>
-  <ResultArea title="中国語読み" v-bind:responce="result['zh']" />
-  <ResultArea title="日本語読み" v-bind:responce="result['ja']" />
+  <div class="main">
+    <div v-if="resultLength>1" class="main-message">{{caseMsg}}</div>
+    <div v-if="resultLength==0">
+      <ResultArea v-bind:result="null" />
+    </div>
+    <div v-for="r in result">
+      <ResultArea v-bind:result="r" />
+    </div>
+    <div　class="note">{{policyMsg}}</div>
+  </div>
+  <div class="footer">{{copyright}}</div>
 </div>
 </template>
 
@@ -28,18 +42,19 @@ export default {
     MAX_LENGTH: 8,
     KANJI_UNKNOWN: "？",
     KANJI_KANA_UNKNOWN: "？？",
-    headerMsg: '中国人の名前を漢字かローマ字で入力してください',
+    headerMsg: '▼中国人名を漢字か英字で入力',
+    caseMsg: 'この名前は字の意味によって表記と読み方が変わります。',
     target: '',
-    errorMsg2: '文字以下で入力してください。',
-    errorMsg: '漢字かローマ字を入力してください。',
-    result: {
-      "zh": null,
-      "ja": null
-    },
+    errorMsg2: '%s文字以下で入力してください。',
+    errorMsg: '漢字か英字を入力してください。',
+    result: {},
+    inputPlaceholder: "鲁迅",
+    policyMsg: "日本名の読み仮名は正統な漢音を採用しており、通俗的な読み方とは異なる可能性があります。例えば、「毛沢東」は通俗的な読み方では「モウタクトウ」ですが、正統な漢音では「ボウタクトウ」となります。",
+    copyright: "Developed by 日曜大工"
   }),
   computed: {
     lengthErrorMsg() {
-      return this.MAX_LENGTH + this.errorMsg2
+      return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
     isError() {
       return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) ||
@@ -47,6 +62,9 @@ export default {
     },
     isOverLimit() {
       return this.target.length > this.MAX_LENGTH
+    },
+    resultLength() {
+      return Object.keys(this.result).length;
     }
   },
   components: {
@@ -63,45 +81,28 @@ export default {
         return
       }
 
-      var syllables = this.splitBySyllable(this.target);
-
-      // 値としてコピーする
-      let syllablesString = JSON.stringify(syllables);
-      this.result["zh"] = JSON.parse(syllablesString)
-      this.result["ja"] = JSON.parse(syllablesString)
 
 
-      // すぐにわかるものは解決する
-      for (let i in this.result["ja"]) {
-        var res = this.result["ja"][i];
-        if (res["type"] == "R") {
-          res["main"] = this.KANJI_UNKNOWN;
-          res["ruby"] = this.KANJI_KANA_UNKNOWN;
-        }
-      }
-      for (let i in this.result["zh"]) {
-        var res = this.result["zh"][i];
-        if (res["type"] == "R") {
-          res["main"] = res["original"];
-          res["ruby"] = pinyinList[res["main"]]
-        }
-      }
+      // シラブルを配列で取得
+      //var syllables = this.splitBySyllable(this.target);
 
-      // 既知の文字ならばここで解決したい
+      var syllables = this.splitBySyllable("谷乐发绿");
+
+      // TODO: 英字しかない場合はここで適切に値を設定してreturn
+
+      // TODO: 既知の文字ならばここで解決したい
 
 
       // ここまでで解決しなかったらサーバーに託す
       var url = "" + process.env.VUE_APP_SERVER_TRANSLATION;
       this.$jsonp(url, {
-        resultString: JSON.stringify(this.result),
+        syllableString: JSON.stringify(syllables),
       }).then(data => {
-        for (let i in data["zh"]) {
-          var res = data["zh"][i];
-          res["ruby"] = pinyinList[res["main"]]
-        }
-        this.result = data
+        console.log(data);
+        this.result = data;
       })
     },
+
     splitBySyllable: function(chineseName) {
       let characters = chineseName.split("");
       let syllables = [];
@@ -109,8 +110,6 @@ export default {
         let data = {};
         data["type"] = "K";
         data["original"] = characters[i];
-        data["main"] = "…";
-        data["ruby"] = "…";
         syllables.push(data);
       }
       return syllables;
@@ -121,29 +120,98 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h3 {
-  margin: 40px 0 0;
+.header {
+  background-color: #ffffff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-shadow: 0.2rem 0.2rem 1rem 0.2rem rgba(0, 0, 0, 0.2);
 }
 
-ul {
-  list-style-type: none;
-  padding: 0;
+.app-name {
+  font-size: 0.8rem;
+  padding: 0.3rem;
+  color: #ffffff;
+  background-color: #e06666;
+  text-align: center;
 }
 
-li {
-  display: inline-block;
-  margin: 0 10px;
+
+.header-content {
+  margin: 1rem auto;
+  width: 80%;
+  box-sizing: border-box;
 }
 
-a {
-  color: #42b983;
+.main {
+  padding: 10rem 0;
+  box-sizing: border-box;
+  margin: 1rem auto;
+  width: 80%;
+}
+
+.main-message {
+  padding: 2rem 0 0 0;
+}
+
+.form {
+  width: 100%;
+  font-size: 1.5rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  outline: 0;
+  border: 2px solid #dddddd;
+}
+
+.form::placeholder {
+  color: #e0e0e0;
 }
 
 .error-input {
-  border-color: red;
+  border: 2px solid red;
 }
 
-.error-text {
+.error-area {
+  font-size: 0.5rem;
   color: red;
+  height: 1rem;
+}
+
+.note {
+  font-size: 0.8rem;
+}
+
+.note::before {
+  content: "＊";
+}
+
+.footer {
+  color: #888888;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #eeeeee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.5em;
+  padding: 0.5em;
+  box-sizing: border-box;
+}
+
+@media screen and (min-width: 1200px) {
+  .app-name {
+    font-size: 2rem;
+  }
+
+  .header-content {
+    width: 30%;
+  }
+
+  .main {
+    width: 30%;
+  }
 }
 </style>
