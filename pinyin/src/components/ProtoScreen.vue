@@ -6,8 +6,8 @@
       <div class="header-message"> {{headerMsg}}</div>
       <input class="form" v-on:input="translate" v-bind:class="{ 'error-input' : isError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
-        <span v-if="isError"> {{errorMsg}}</span>
-        <span v-if="isOverLimit"> {{lengthErrorMsg}}</span>
+        <span v-if="isError" id="id_charactertype"> {{errorMsg}}</span>
+        <span v-if="isOverLimit" id="id_overlimit"> {{lengthErrorMsg}}</span>
 
       </div>
     </div>
