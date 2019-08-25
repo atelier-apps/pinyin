@@ -31,7 +31,7 @@
 <script>
 import axios from 'axios'
 import ResultArea from '@/components/ResultArea.vue'
-import pinyinList from '@/assets/pinyinList.json'
+import pinyinList from '@/assets/pinyinList.js'
 
 export default {
   name: 'ProtoScreen',
@@ -59,6 +59,14 @@ export default {
     isError() {
       return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) ||
         this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
+    },
+    isKanji() {
+      return this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
+      console.log("これは漢字")
+    },
+    isAlpha() {
+      return this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
+      console.log("これはアルファベット")
     },
     isOverLimit() {
       return this.target.length > this.MAX_LENGTH
@@ -104,13 +112,39 @@ export default {
     },
 
     splitBySyllable: function(chineseName) {
-      let characters = chineseName.split("");
-      let syllables = [];
-      for (let i in characters) {
-        let data = {};
-        data["type"] = "K";
-        data["original"] = characters[i];
-        syllables.push(data);
+    console.log("澤田執筆");
+      if(this.isAlpha){
+        var i;
+        for(i = 0; i <= 407; i += 1){
+        var pinyinList = [i]
+        console.log("アルファベットの分解スタート");
+        console.log(i);
+        console.log(pinyinList[i]);
+          if(array[i] = isAlpha){
+            let characters = chineseName.split("");
+            let syllables = [];
+            for (let i in characters) {
+              let data = {};
+              data["type"] = "A";
+              console.log("入力タイプ" + data["type"])
+              data["original"] = characters[i];
+              syllables.push(data);
+              }
+          }
+        }
+
+      }
+      if(this.isKanji){
+        console.log("漢字の分解スタート");
+        let characters = chineseName.split("");
+        let syllables = [];
+        for (let i in characters) {
+          let data = {};
+          data["type"] = "K";
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
       }
       return syllables;
     }
