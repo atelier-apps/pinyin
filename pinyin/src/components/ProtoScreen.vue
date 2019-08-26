@@ -228,7 +228,7 @@ export default {
       return letters.join("");
     },
 
-    // 1音節の英字文字列を拼音に変換する。
+    // 1音節の英字文字列を近似音に変換する。
     getKanaOfAlphabet: function(alphabet) {
       let kana = alphabetKana[alphabet];
       if (kana == null) {
