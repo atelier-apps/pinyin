@@ -45,6 +45,7 @@ export default {
     TYPE_ALPHABET: "A",
     TYPE_KANJI: "K",
     TYPE_PINYIN: "P",
+    TYPE_OTHER: "O",
     UNKNOWN: "？",
     UNKNOWN_KANJI: "？",
     UNKNOWN_KANJI_KANA: "？？",
@@ -64,8 +65,9 @@ export default {
     lengthErrorMsg() {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
+    // TODO: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
     isError() {
-      return !(this.isAlphabet(this.target) || this.isKanji(this.target))
+      return !(this.isAlphabet(this.target) || this.isKanji(this.target));
     },
     syllables: function() {
       return this.splitBySyllable(this.target);
@@ -159,6 +161,7 @@ export default {
     },
 
     // TODO: [{"original":"xué","type":"P"},{"original":"han","type":"A"},{"original":"字","type":"K"}]のように各音節の情報を返す。targetTextは「漢字」「英字」「符号つき英字」のみを含むが、「han字」「hànzi」「hàn字」のように混在しているケースも考慮する。
+    // TODO: typeは右記の通りとする： TYPE_ALPHABET: "A", TYPE_KANJI: "K", TYPE_PINYIN: "P", TYPE_OTHER: "O",
     splitBySyllable: function(targetText) {
       console.log("澤田執筆");
       let syllables = []; // スコープの関係で外で宣言
@@ -194,7 +197,7 @@ export default {
           syllables.push(data);
         }
       }
-
+      console.log(syllables);
       return syllables;
     },
 
