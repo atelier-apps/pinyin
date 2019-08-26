@@ -33,6 +33,7 @@ import axios from 'axios'
 import ResultArea from '@/components/ResultArea.vue'
 import alphabetKana from '@/assets/alphabetKana.json'
 import pinyinAlphabet from '@/assets/pinyinAlphabet.json'
+import pinyinList from '@/assets/pinyinList.js'
 
 export default {
   name: 'ProtoScreen',
@@ -43,6 +44,7 @@ export default {
     MAX_LENGTH: 5,
     TYPE_ALPHABET: "A",
     TYPE_KANJI: "K",
+    TYPE_PINYIN: "P",
     UNKNOWN: "？",
     UNKNOWN_KANJI: "？",
     UNKNOWN_KANJI_KANA: "？？",
@@ -63,8 +65,7 @@ export default {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
     isError() {
-      return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) ||
-        this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
+      return !(this.isAlphabet(this.target) || this.isKanji(this.target))
     },
     syllables: function() {
       return this.splitBySyllable(this.target);
@@ -94,7 +95,7 @@ export default {
 
     translate: function() {
 
-      let targetText = /*"谷乐发绿" */ this.target;
+      let targetText = this.target;
 
       if (this.isTyping) {
         console.log("入力中の可能性が高いので弾いた")
@@ -118,28 +119,29 @@ export default {
       let syllables = this.syllables;
 
 
-      // 英字しかない場合はここで解決して終了
-      let isAlphabetOnly = true;
+      // 漢字が含まれない場合（英字かピンインしかない場合）はここで解決して終了
+      let includesKanji = false;
       for (let i in syllables) {
-        if (syllables[i]["type"] != this.TYPE_ALPHABET) {
-          isAlphabetOnly = true;
+        if (syllables[i]["type"] == this.TYPE_KANJI) {
+          includesKanji = true;
           break;
         }
       }
-
-      if (isAlphabetOnly == true) {
+      if (includesKanji == false) {
         for (let i in syllables) {
           syllables[i]["kanji"] = this.UNKNOWN_KANJI;
           syllables[i]["kanji_kana"] = this.UNKNOWN_KANJI_KANA;
-          if (this.isPinyin(syllables[i]["original"]) == true) {
+          if (syllables[i]["type"] == this.TYPE_PINYIN) {
             syllables[i]["pinyin"] = syllables[i]["original"];
-          } else {
+            syllables[i]["alphabet"] = convertPinyinTextToAlphabetText(syllables[i]["original"]);
+          } else if (syllables[i]["type"] == this.TYPE_ALPHABET) {
             syllables[i]["pinyin"] = this.UNKNOWN;
+            syllables[i]["alphabet"] = syllables[i]["original"];
           }
+          syllables[i]["pinyin_kana"] = this.getKanaOfAlphabet(syllables[i]["alphabet"]);
         }
         let resultData = [];
         resultData.push(syllables);
-        this.addAlphabetInfo(resultData);
         this.result = resultData;
         console.log("英字のみなのでクライアント側で解決した")
         return;
@@ -156,22 +158,62 @@ export default {
       })
     },
 
-    splitBySyllable: function(chineseName) {
-      let characters = chineseName.split("");
-      let syllables = [];
-      for (let i in characters) {
-        let data = {};
-        data["type"] = this.TYPE_KANJI;
-        data["original"] = characters[i];
-        syllables.push(data);
+    // TODO: [{"original":"xué","type":"P"},{"original":"han","type":"A"},{"original":"字","type":"K"}]のように各音節の情報を返す。targetTextは「漢字」「英字」「符号つき英字」のみを含むが、「han字」「hànzi」「hàn字」のように混在しているケースも考慮する。
+    splitBySyllable: function(targetText) {
+      console.log("澤田執筆");
+      let syllables = []; // スコープの関係で外で宣言
+
+      if (this.isAlphabet(targetText)) {
+        // var i;
+        // for (i = 0; i <= 407; i += 1) {
+        //    var pinyinList = [i]
+        //   console.log("アルファベットの分解スタート");
+        //   console.log(i);
+        //   console.log(pinyinList[i]);
+        //   if (array[i] = this.isAlphabet(targetText)) {
+        let characters = targetText.split("");
+        for (let i in characters) {
+          let data = {};
+          data["type"] = this.TYPE_ALPHABET;
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          data["alphabet"] = characters[i];
+          syllables.push(data);
+        }
+        //   }
+        // }
       }
+      if (this.isKanji(targetText)) {
+        console.log("漢字の分解スタート");
+        let characters = targetText.split("");
+        for (let i in characters) {
+          let data = {};
+          data["type"] = this.TYPE_KANJI;
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
+      }
+
       return syllables;
     },
 
+    // TODO: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse
     isPinyin: function(text) {
-      return true;
+      return false;
     },
 
+    isKanji: function(text) {
+      console.log("これは漢字")
+      return text.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
+    },
+
+    isAlphabet: function(text) {
+      console.log("これはアルファベット")
+      return text.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
+    },
+
+    // 1音節の拼音文字列を英字文字列に変換する。
     convertPinyinTextToAlphabetText: function(pinyinText) {
       var letters = pinyinText.split("");
       for (let i in letters) {
@@ -183,6 +225,7 @@ export default {
       return letters.join("");
     },
 
+    // 1音節の英字文字列を拼音に変換する。
     getKanaOfAlphabet: function(alphabet) {
       let kana = alphabetKana[alphabet];
       if (kana == null) {
@@ -191,6 +234,7 @@ export default {
       return kana;
     },
 
+    // 引数にとった結果データ（pinyinをもつ）を対象に、pinyinに対応する英字と近似音を付与する。
     addAlphabetInfo: function(resultData) {
       for (let i in resultData) {
         for (let j in resultData[i]) {
