@@ -4,7 +4,7 @@
     <div class="app-name"> {{app_name}}</div>
     <div class="header-content">
       <div class="header-message"> {{headerMsg}}</div>
-      <input class="form" v-on:input="translate" v-bind:class="{ 'error-input' : isError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
         <span v-if="isError" id="id_charactertype"> {{errorMsg}}</span>
         <span v-if="isOverLimit" id="id_overlimit"> {{lengthErrorMsg}}</span>
@@ -31,6 +31,8 @@
 <script>
 import axios from 'axios'
 import ResultArea from '@/components/ResultArea.vue'
+import alphabetKana from '@/assets/alphabetKana.json'
+import pinyinAlphabet from '@/assets/pinyinAlphabet.json'
 import pinyinList from '@/assets/pinyinList.js'
 
 export default {
@@ -39,9 +41,13 @@ export default {
     app_name: String
   },
   data: () => ({
-    MAX_LENGTH: 8,
-    KANJI_UNKNOWN: "？",
-    KANJI_KANA_UNKNOWN: "？？",
+    MAX_LENGTH: 5,
+    TYPE_ALPHABET: "A",
+    TYPE_KANJI: "K",
+    TYPE_PINYIN: "P",
+    UNKNOWN: "？",
+    UNKNOWN_KANJI: "？",
+    UNKNOWN_KANJI_KANA: "？？",
     headerMsg: '▼中国人名を漢字か英字で入力',
     caseMsg: 'この名前は字の意味によって表記と読み方が変わります。',
     target: '',
@@ -50,26 +56,22 @@ export default {
     result: {},
     inputPlaceholder: "鲁迅",
     policyMsg: "日本名の読み仮名は正統な漢音を採用しており、通俗的な読み方とは異なる可能性があります。例えば、「毛沢東」は通俗的な読み方では「モウタクトウ」ですが、正統な漢音では「ボウタクトウ」となります。",
-    copyright: "Developed by 日曜大工"
+    copyright: "Developed by 日曜大工",
+    inputStack: [],
+    delayTimeMs: 500
   }),
   computed: {
     lengthErrorMsg() {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
     isError() {
-      return !(this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/) ||
-        this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/))
+      return !(this.isAlphabet(this.target) || this.isKanji(this.target))
     },
-    isKanji() {
-      return this.target.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
-      console.log("これは漢字")
-    },
-    isAlpha() {
-      return this.target.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
-      console.log("これはアルファベット")
+    syllables: function() {
+      return this.splitBySyllable(this.target);
     },
     isOverLimit() {
-      return this.target.length > this.MAX_LENGTH
+      return this.syllables.length > this.MAX_LENGTH
     },
     resultLength() {
       return Object.keys(this.result).length;
@@ -79,75 +81,176 @@ export default {
     ResultArea
   },
   methods: {
+    checkInput: function() {
+      // 入力が終わってdelayTimeMs秒経過するまで待つための処理
+      this.inputStack.push(1);
+      setTimeout(function() {
+        this.inputStack.pop();
+        if (this.inputStack.length == 0) {
+          this.inputStack = [];
+          this.translate();
+        }
+      }.bind(this), this.delayTimeMs);
+    },
+
     translate: function() {
+
+      let targetText = this.target;
+
+      if (this.isTyping) {
+        console.log("入力中の可能性が高いので弾いた")
+        return;
+      }
+      if (targetText == "") {
+        console.log("空なので結果を初期値にして弾いた")
+        this.result = {};
+        return;
+      }
       if (this.isOverLimit) {
         console.log("文字数で弾いた")
-        return
+        return;
       }
       if (this.isError) {
         console.log("文字種類で弾いた")
-        return
+        return;
       }
 
-
-
       // シラブルを配列で取得
-      //var syllables = this.splitBySyllable(this.target);
+      let syllables = this.syllables;
 
-      var syllables = this.splitBySyllable("谷乐发绿");
 
-      // TODO: 英字しかない場合はここで適切に値を設定してreturn
-
-      // TODO: 既知の文字ならばここで解決したい
-
+      // 漢字が含まれない場合（英字かピンインしかない場合）はここで解決して終了
+      let includesKanji = false;
+      for (let i in syllables) {
+        if (syllables[i]["type"] == this.TYPE_KANJI) {
+          includesKanji = true;
+          break;
+        }
+      }
+      if (includesKanji == false) {
+        for (let i in syllables) {
+          syllables[i]["kanji"] = this.UNKNOWN_KANJI;
+          syllables[i]["kanji_kana"] = this.UNKNOWN_KANJI_KANA;
+          if (syllables[i]["type"] == this.TYPE_PINYIN) {
+            syllables[i]["pinyin"] = syllables[i]["original"];
+            syllables[i]["alphabet"] = convertPinyinTextToAlphabetText(syllables[i]["original"]);
+          } else if (syllables[i]["type"] == this.TYPE_ALPHABET) {
+            syllables[i]["pinyin"] = this.UNKNOWN;
+            syllables[i]["alphabet"] = syllables[i]["original"];
+          }
+          syllables[i]["pinyin_kana"] = this.getKanaOfAlphabet(syllables[i]["alphabet"]);
+        }
+        let resultData = [];
+        resultData.push(syllables);
+        this.result = resultData;
+        console.log("英字のみなのでクライアント側で解決した")
+        return;
+      }
 
       // ここまでで解決しなかったらサーバーに託す
-      var url = "" + process.env.VUE_APP_SERVER_TRANSLATION;
+      let url = "" + process.env.VUE_APP_SERVER_TRANSLATION;
       this.$jsonp(url, {
         syllableString: JSON.stringify(syllables),
-      }).then(data => {
-        console.log(data);
-        this.result = data;
+      }).then(resultData => {
+        this.addAlphabetInfo(resultData);
+        this.result = resultData;
+        scrollTo(0, 0);
       })
     },
 
-    splitBySyllable: function(chineseName) {
-    console.log("澤田執筆");
-      if(this.isAlpha){
-        var i;
-        for(i = 0; i <= 407; i += 1){
-        var pinyinList = [i]
-        console.log("アルファベットの分解スタート");
-        console.log(i);
-        console.log(pinyinList[i]);
-          if(array[i] = isAlpha){
-            let characters = chineseName.split("");
-            let syllables = [];
-            for (let i in characters) {
-              let data = {};
-              data["type"] = "A";
-              console.log("入力タイプ" + data["type"])
-              data["original"] = characters[i];
-              syllables.push(data);
-              }
-          }
-        }
+    // TODO: [{"original":"xué","type":"P"},{"original":"han","type":"A"},{"original":"字","type":"K"}]のように各音節の情報を返す。targetTextは「漢字」「英字」「符号つき英字」のみを含むが、「han字」「hànzi」「hàn字」のように混在しているケースも考慮する。
+    splitBySyllable: function(targetText) {
+      console.log("澤田執筆");
+      let syllables = []; // スコープの関係で外で宣言
 
-      }
-      if(this.isKanji){
-        console.log("漢字の分解スタート");
-        let characters = chineseName.split("");
-        let syllables = [];
+      if (this.isAlphabet(targetText)) {
+        // var i;
+        // for (i = 0; i <= 407; i += 1) {
+        //    var pinyinList = [i]
+        //   console.log("アルファベットの分解スタート");
+        //   console.log(i);
+        //   console.log(pinyinList[i]);
+        //   if (array[i] = this.isAlphabet(targetText)) {
+        let characters = targetText.split("");
         for (let i in characters) {
           let data = {};
-          data["type"] = "K";
+          data["type"] = this.TYPE_ALPHABET;
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          data["alphabet"] = characters[i];
+          syllables.push(data);
+        }
+        //   }
+        // }
+      }
+      if (this.isKanji(targetText)) {
+        console.log("漢字の分解スタート");
+        let characters = targetText.split("");
+        for (let i in characters) {
+          let data = {};
+          data["type"] = this.TYPE_KANJI;
           console.log("入力タイプ" + data["type"])
           data["original"] = characters[i];
           syllables.push(data);
         }
       }
+
       return syllables;
+    },
+
+    // TODO: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse
+    isPinyin: function(text) {
+      return false;
+    },
+
+    isKanji: function(text) {
+      console.log("これは漢字")
+      return text.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
+    },
+
+    isAlphabet: function(text) {
+      console.log("これはアルファベット")
+      return text.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
+    },
+
+    // 1音節の拼音文字列を英字文字列に変換する。
+    convertPinyinTextToAlphabetText: function(pinyinText) {
+      var letters = pinyinText.split("");
+      for (let i in letters) {
+        let alphabet = pinyinAlphabet[letters[i]];
+        if (alphabet != null) {
+          letters[i] = alphabet;
+        }
+      }
+      return letters.join("");
+    },
+
+    // 1音節の英字文字列を拼音に変換する。
+    getKanaOfAlphabet: function(alphabet) {
+      let kana = alphabetKana[alphabet];
+      if (kana == null) {
+        return this.UNKNOWN;
+      }
+      return kana;
+    },
+
+    // 引数にとった結果データ（pinyinをもつ）を対象に、pinyinに対応する英字と近似音を付与する。
+    addAlphabetInfo: function(resultData) {
+      for (let i in resultData) {
+        for (let j in resultData[i]) {
+          let pinyin = resultData[i][j]["pinyin"];
+          if (pinyin == null) {
+            continue;
+          }
+          let alphabet = this.convertPinyinTextToAlphabetText(pinyin);
+          let pinyinKana = this.getKanaOfAlphabet(alphabet);
+          resultData[i][j]["alphabet"] = alphabet;
+          resultData[i][j]["pinyin_kana"] = pinyinKana;
+        }
+      }
     }
+
+
   }
 }
 </script>

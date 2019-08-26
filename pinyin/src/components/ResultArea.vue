@@ -17,21 +17,21 @@
     <div class="row">
       <div class="row-label">近似音</div>
       <div class="row-content">
-        <span class="japanese-block placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['pinyin_kana']"></span>
+        <span class="chinese-block kana placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['pinyin_kana']"></span>
         <span class="chinese-block kana" v-for="r in result" v-text="r['pinyin_kana']"></span>
       </div>
     </div>
     <div class="row">
       <div class="row-label">拼音</div>
       <div class="row-content">
-        <span class="japanese-block placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['pinyin']"></span>
+        <span class="chinese-block placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['pinyin']"></span>
         <span class="chinese-block" v-for="r in result" v-text="r['pinyin']"></span>
       </div>
     </div>
     <div class="row">
       <div class="row-label">英字</div>
       <div class="row-content">
-        <span class="japanese-block placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['alphabet']"></span>
+        <span class="chinese-block placeholder" v-if="result==null" v-for="r in resultPlaceholder" v-text="r['alphabet']"></span>
         <span class="chinese-block" v-for="r in result" v-text="r['alphabet']"></span>
       </div>
     </div>
@@ -163,6 +163,6 @@ export default {
 }
 
 .placeholder {
-  color: #dddddd;
+  color: #cccccc;
 }
 </style>

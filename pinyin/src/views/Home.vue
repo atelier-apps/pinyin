@@ -1,6 +1,6 @@
 <template>
 <div class="home">
-  <ProtoScreen app_name="プロトタイプ" />
+  <ProtoScreen app_name="爱 don't know" />
 </div>
 </template>
 
