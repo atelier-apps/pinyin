@@ -68,7 +68,7 @@ export default {
     },
     // TODO-OK?: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
     isError() {
-      return !(this.isAlphabet(this.target) || this.isKanji(this.target));
+      return !(this.isAlphabet(this.target) || this.isKanji(this.target) || this.isPinyin(this.target));
     },
     syllables: function() {
       return this.splitBySyllable(this.target);
@@ -116,6 +116,11 @@ export default {
       if (this.isError) {
         console.log("文字種類で弾いた")
         return;
+      }
+
+      // テスト用
+      if (this.isPinyin(targetText)) {
+        console.log("Pinyin!");
       }
 
       // シラブルを配列で取得
@@ -205,12 +210,10 @@ export default {
     },
 
     isKanji: function(text) {
-      console.log("これは漢字")
       return text.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
     },
 
     isAlphabet: function(text) {
-      console.log("これはアルファベット")
       return text.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
     },
 
