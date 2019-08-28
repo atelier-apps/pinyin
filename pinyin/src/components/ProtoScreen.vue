@@ -34,6 +34,7 @@ import ResultArea from '@/components/ResultArea.vue'
 import alphabetKana from '@/assets/alphabetKana.json'
 import pinyinAlphabet from '@/assets/pinyinAlphabet.json'
 import pinyinList from '@/assets/pinyinList.js'
+import specialAlpha from '@/assets/epecialAlphabetPinyin.js'
 
 export default {
   name: 'ProtoScreen',
@@ -65,7 +66,7 @@ export default {
     lengthErrorMsg() {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
-    // TODO: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
+    // TODO-OK?: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
     isError() {
       return !(this.isAlphabet(this.target) || this.isKanji(this.target));
     },
@@ -163,17 +164,10 @@ export default {
     // TODO: [{"original":"xué","type":"P"},{"original":"han","type":"A"},{"original":"字","type":"K"}]のように各音節の情報を返す。targetTextは「漢字」「英字」「符号つき英字」のみを含むが、「han字」「hànzi」「hàn字」のように混在しているケースも考慮する。
     // TODO: typeは右記の通りとする： TYPE_ALPHABET: "A", TYPE_KANJI: "K", TYPE_PINYIN: "P", TYPE_OTHER: "O",
     splitBySyllable: function(targetText) {
-      console.log("澤田執筆");
       let syllables = []; // スコープの関係で外で宣言
 
       if (this.isAlphabet(targetText)) {
-        // var i;
-        // for (i = 0; i <= 407; i += 1) {
-        //    var pinyinList = [i]
-        //   console.log("アルファベットの分解スタート");
-        //   console.log(i);
-        //   console.log(pinyinList[i]);
-        //   if (array[i] = this.isAlphabet(targetText)) {
+        console.log("アルファベットの分解スタート");
         let characters = targetText.split("");
         for (let i in characters) {
           let data = {};
@@ -183,8 +177,6 @@ export default {
           data["alphabet"] = characters[i];
           syllables.push(data);
         }
-        //   }
-        // }
       }
       if (this.isKanji(targetText)) {
         console.log("漢字の分解スタート");
@@ -197,13 +189,19 @@ export default {
           syllables.push(data);
         }
       }
+      if (this.isPinyin(targetText)) {
+        console.log("ピンインの分解スタート");
+        let characters = targetText.split("");
+        for (let i in characters) {
+          let data = {};
+          data["type"] = TYPE_PINYIN;
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
+      }
       console.log(syllables);
       return syllables;
-    },
-
-    // TODO: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse
-    isPinyin: function(text) {
-      return false;
     },
 
     isKanji: function(text) {
@@ -214,6 +212,21 @@ export default {
     isAlphabet: function(text) {
       console.log("これはアルファベット")
       return text.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
+    },
+
+    // TODO-OK?: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse(isKanjiかisAlphaでなければ、falseにする)
+    //\pinyin\pinyin\src\assets 以下に、「epecialAlphabetPinyin.js」というファイルを作成（specialAlphaとしてimport）
+    isPinyin: function(text) {
+      console.log("これはピンイン")
+      var a = ["a","b","c"];
+      for(var i=0; i<=text.length; i +=1){
+        //入力値を先頭から読み込み、一文字ずつ「epecialAlphabetPinyin.js」に該当する文字があるか検索(ちょっと分からんかった)
+        if(a.indexOf(text[i]) == 1){
+            return true
+          }
+      }
+      return false
+      console.log("これはあああ")
     },
 
     // 1音節の拼音文字列を英字文字列に変換する。
