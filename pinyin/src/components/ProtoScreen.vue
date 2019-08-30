@@ -4,9 +4,9 @@
     <div class="app-name"> {{app_name}}</div>
     <div class="header-content">
       <div class="header-message"> {{headerMsg}}</div>
-      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isValidate}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
-        <span v-if="isError" id="id_charactertype"> {{errorMsg}}</span>
+        <span v-if="isValidate" id="id_charactertype"> {{errorMsg}}</span>
         <span v-if="isOverLimit" id="id_overlimit"> {{lengthErrorMsg}}</span>
 
       </div>
@@ -34,7 +34,6 @@ import ResultArea from '@/components/ResultArea.vue'
 import alphabetKana from '@/assets/alphabetKana.json'
 import pinyinAlphabet from '@/assets/pinyinAlphabet.json'
 import pinyinList from '@/assets/pinyinList.js'
-import specialAlpha from '@/assets/epecialAlphabetPinyin.js'
 
 export default {
   name: 'ProtoScreen',
@@ -67,7 +66,7 @@ export default {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
     // TODO-OK?: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
-    isError() {
+    isValidate() {
       return !(this.isAlphabet(this.target) || this.isKanji(this.target) || this.isPinyin(this.target));
     },
     syllables: function() {
@@ -113,7 +112,7 @@ export default {
         console.log("文字数で弾いた")
         return;
       }
-      if (this.isError) {
+      if (this.isValidate) {
         console.log("文字種類で弾いた")
         return;
       }
@@ -205,6 +204,17 @@ export default {
           syllables.push(data);
         }
       }
+      if (this.isPinyin(targetText)) {
+        console.log("その他の分解スタート");
+        let characters = targetText.split("");
+        for (let i in characters) {
+          let data = {};
+          data["type"] = TYPE_OTHER;
+          console.log("入力タイプ" + data["type"])
+          data["original"] = characters[i];
+          syllables.push(data);
+        }
+      }
       console.log(syllables);
       return syllables;
     },
@@ -218,15 +228,14 @@ export default {
     },
 
     // TODO-OK?: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse(isKanjiかisAlphaでなければ、falseにする)
-    //\pinyin\pinyin\src\assets 以下に、「epecialAlphabetPinyin.js」というファイルを作成（specialAlphaとしてimport）
     isPinyin: function(text) {
-      console.log("これはピンイン")
-      var a = ["a","b","c"];
+      var specialAlphas = ['ā','á','ǎ','à','ē','é','ě','è','ī','í','ǐ','ì','ō','ó','ǒ','ò','ū','ú','ǔ','ù','ǖ','ǘ','ǚ','ǜ','ü']
       for(var i=0; i<=text.length; i +=1){
-        //入力値を先頭から読み込み、一文字ずつ「epecialAlphabetPinyin.js」に該当する文字があるか検索(ちょっと分からんかった)
-        if(a.indexOf(text[i]) == 1){
-            return true
-          }
+        //入力値を先頭から読み込み、一文字ずつ特殊な文字が入っているか
+        if(specialAlphas.indexOf(text[i]) == 1){
+          console.log("これはピンイン")
+          return true
+        }
       }
       return false
       console.log("これはあああ")
