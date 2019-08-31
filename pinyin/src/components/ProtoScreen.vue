@@ -4,9 +4,9 @@
     <div class="app-name"> {{app_name}}</div>
     <div class="header-content">
       <div class="header-message"> {{headerMsg}}</div>
-      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isValidate}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isCharacterTypeError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
-        <span v-if="isValidate" id="id_charactertype"> {{errorMsg}}</span>
+        <span v-if="isCharacterTypeError" id="id_charactertype"> {{errorMsg}}</span>
         <span v-if="isOverLimit" id="id_overlimit"> {{lengthErrorMsg}}</span>
 
       </div>
@@ -33,7 +33,7 @@ import axios from 'axios'
 import ResultArea from '@/components/ResultArea.vue'
 import alphabetKana from '@/assets/alphabetKana.json'
 import pinyinAlphabet from '@/assets/pinyinAlphabet.json'
-import pinyinList from '@/assets/pinyinList.js'
+import pinyinList from '@/assets/pinyinList.json'
 
 export default {
   name: 'ProtoScreen',
@@ -42,13 +42,13 @@ export default {
   },
   data: () => ({
     MAX_LENGTH: 5,
-    TYPE_ALPHABET: "A",
-    TYPE_KANJI: "K",
-    TYPE_PINYIN: "P",
-    TYPE_OTHER: "O",
     UNKNOWN: "？",
     UNKNOWN_KANJI: "？",
     UNKNOWN_KANJI_KANA: "？？",
+    TYPE_ALPHABET: "A",
+    TYPE_PINYIN: "P",
+    TYPE_KANJI: "K",
+    TYPE_OTHER: "O",
     headerMsg: '▼中国人名を漢字か英字で入力',
     caseMsg: 'この名前は字の意味によって表記と読み方が変わります。',
     target: '',
@@ -65,15 +65,17 @@ export default {
     lengthErrorMsg() {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
-    // TODO-OK?: シラブルを走査し、1つでもTYPE_OTHERがあったらtrue、なければfalseにする
-    isValidate() {
-      return !(this.isAlphabet(this.target) || this.isKanji(this.target) || this.isPinyin(this.target));
+    isCharacterTypeError() {
+      return !this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target)).match(/^[' A-Za-z\u3005-\u3006\u30e0-\u9fcf]*$/)
     },
     syllables: function() {
       return this.splitBySyllable(this.target);
     },
     isOverLimit() {
       return this.syllables.length > this.MAX_LENGTH
+    },
+    isEmpty() {
+      return this.syllables.length == 0
     },
     resultLength() {
       return Object.keys(this.result).length;
@@ -97,13 +99,7 @@ export default {
 
     translate: function() {
 
-      let targetText = this.target;
-
-      if (this.isTyping) {
-        console.log("入力中の可能性が高いので弾いた")
-        return;
-      }
-      if (targetText == "") {
+      if (this.isEmpty) {
         console.log("空なので結果を初期値にして弾いた")
         this.result = {};
         return;
@@ -112,19 +108,12 @@ export default {
         console.log("文字数で弾いた")
         return;
       }
-      if (this.isValidate) {
+      if (this.isCharacterTypeError) {
         console.log("文字種類で弾いた")
         return;
       }
 
-      // テスト用
-      if (this.isPinyin(targetText)) {
-        console.log("Pinyin!");
-      }
-
-      // シラブルを配列で取得
       let syllables = this.syllables;
-
 
       // 漢字が含まれない場合（英字かピンインしかない場合）はここで解決して終了
       let includesKanji = false;
@@ -139,8 +128,8 @@ export default {
           syllables[i]["kanji"] = this.UNKNOWN_KANJI;
           syllables[i]["kanji_kana"] = this.UNKNOWN_KANJI_KANA;
           if (syllables[i]["type"] == this.TYPE_PINYIN) {
-            syllables[i]["pinyin"] = syllables[i]["original"];
-            syllables[i]["alphabet"] = convertPinyinTextToAlphabetText(syllables[i]["original"]);
+            syllables[i]["pinyin"] = syllables[i].original;
+            syllables[i]["alphabet"] = this.convertPinyinTextToAlphabetText(syllables[i]["original"]);
           } else if (syllables[i]["type"] == this.TYPE_ALPHABET) {
             syllables[i]["pinyin"] = this.UNKNOWN;
             syllables[i]["alphabet"] = syllables[i]["original"];
@@ -162,86 +151,92 @@ export default {
         this.addAlphabetInfo(resultData);
         this.result = resultData;
         scrollTo(0, 0);
+        console.log("漢字交じりなのでサーバ側で解決した")
       })
     },
 
-    // TODO: [{"original":"xué","type":"P"},{"original":"han","type":"A"},{"original":"字","type":"K"}]のように各音節の情報を返す。targetTextは「漢字」「英字」「符号つき英字」のみを含むが、「han字」「hànzi」「hàn字」のように混在しているケースも考慮する。
-    // TODO: typeは右記の通りとする： TYPE_ALPHABET: "A", TYPE_KANJI: "K", TYPE_PINYIN: "P", TYPE_OTHER: "O",
     splitBySyllable: function(targetText) {
-      let syllables = []; // スコープの関係で外で宣言
 
-      if (this.isAlphabet(targetText)) {
-        console.log("アルファベットの分解スタート");
-        let characters = targetText.split("");
-        for (let i in characters) {
-          let data = {};
-          data["type"] = this.TYPE_ALPHABET;
-          console.log("入力タイプ" + data["type"])
-          data["original"] = characters[i];
-          data["alphabet"] = characters[i];
-          syllables.push(data);
+      let splitPoints = {};
+      splitPoints[0] = true;
+      splitPoints[targetText.length] = true;
+
+      let targetTextConvertedToHelfWidth = this.convertFullWidthToHalfWidth(targetText);
+      let targeTextConvertedToAlphabet = this.convertPinyinTextToAlphabetText(targetTextConvertedToHelfWidth);
+      let bits = new Array(targeTextConvertedToAlphabet.length).fill(false);
+
+      // startからendまでの範囲が未マッチングの範囲ならば、その前後に分割点を追加し、マッチング済みであることを示すビットを立てる関数。
+      var addSplitPoint = function(splitPoints, bits, start, end) {
+        if (bits.slice(start, end).indexOf(true) != -1) {
+          return;
+        }
+        splitPoints[start] = true;
+        splitPoints[end] = true;
+        bits.fill(true, start, end);
+      }
+
+      //1音節文字を探して分割点をbitsに追加し、その範囲をマッチング済みとしてビットを立てる。
+      let regResult;
+      let reg = new RegExp("[' \u3005-\u3006\u30e0-\u9fcf]", "g");
+      while ((regResult = reg.exec(targeTextConvertedToAlphabet)) !== null) {
+        let start = regResult.index;
+        let end = start + 1;
+        addSplitPoint(splitPoints, bits, start, end);
+      }
+
+      //ピンインを探して分割点をbitsに追加し、その範囲をマッチング済みとしてビットを立てる。
+      for (let i in pinyinList) {
+        let pinyin = pinyinList[i];
+        let reg = new RegExp(pinyin, "g");
+        while ((regResult = reg.exec(targeTextConvertedToAlphabet.toLowerCase())) !== null) {
+          let start = regResult.index;
+          let end = start + pinyin.length;
+          addSplitPoint(splitPoints, bits, start, end);
         }
       }
-      if (this.isKanji(targetText)) {
-        console.log("漢字の分解スタート");
-        let characters = targetText.split("");
-        for (let i in characters) {
-          let data = {};
+
+      // 分割点について、 重複を削除して昇順にする。
+      var splitPointsArray = Array.from(Object.keys(splitPoints)).sort(
+        function(a, b) {
+          return a - b;
+        });
+
+      // 音節で分割し、typeを付与する
+      let syllables = [];
+      for (let i = 0; i < splitPointsArray.length - 1; i++) {
+        let syllable = targetTextConvertedToHelfWidth.slice(splitPointsArray[i], splitPointsArray[i + 1])
+        if (syllable.match(/^[' ]$/)) {
+          continue;
+        }
+        let data = {};
+        data["original"] = syllable;
+        if (this.isKanji(syllable)) {
           data["type"] = this.TYPE_KANJI;
-          console.log("入力タイプ" + data["type"])
-          data["original"] = characters[i];
-          syllables.push(data);
+        } else if (this.isPinyin(syllable)) {
+          data["type"] = this.TYPE_PINYIN;
+        } else if (this.isAlphabet(syllable)) {
+          data["type"] = this.TYPE_ALPHABET;
+        } else {
+          data["type"] = this.TYPE_OTHER;
         }
+
+        syllables.push(data);
       }
-      if (this.isPinyin(targetText)) {
-        console.log("ピンインの分解スタート");
-        let characters = targetText.split("");
-        for (let i in characters) {
-          let data = {};
-          data["type"] = TYPE_PINYIN;
-          console.log("入力タイプ" + data["type"])
-          data["original"] = characters[i];
-          syllables.push(data);
-        }
-      }
-      if (this.isPinyin(targetText)) {
-        console.log("その他の分解スタート");
-        let characters = targetText.split("");
-        for (let i in characters) {
-          let data = {};
-          data["type"] = TYPE_OTHER;
-          console.log("入力タイプ" + data["type"])
-          data["original"] = characters[i];
-          syllables.push(data);
-        }
-      }
-      console.log(syllables);
+
       return syllables;
     },
 
-    isKanji: function(text) {
-      return text.replace(/\s+/g, '').match(/^[\u3005-\u3006\u30e0-\u9fcf]+$/)
+    isAlphabet(text) {
+      return text.match(/^[A-Za-z]+$/);
+    },
+    isKanji(text) {
+      return text.match(/^[\u3005-\u3006\u30e0-\u9fcf]$/);
+    },
+    isPinyin(text) {
+      return text.match(/^[A-Za-z]*[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĪÍǏÌŌÓǑÒĒÉĚÈŪÚǓÙÜǕǗǙǛ][A-Za-z]*$/);
     },
 
-    isAlphabet: function(text) {
-      return text.replace(/\s+/g, '').match(/^[A-Za-z]*$/)
-    },
-
-    // TODO-OK?: 拼音専用文字が1つでも含まれるならばtrue、すべてただの英字や漢字ならばfalse(isKanjiかisAlphaでなければ、falseにする)
-    isPinyin: function(text) {
-      var specialAlphas = ['ā','á','ǎ','à','ē','é','ě','è','ī','í','ǐ','ì','ō','ó','ǒ','ò','ū','ú','ǔ','ù','ǖ','ǘ','ǚ','ǜ','ü']
-      for(var i=0; i<=text.length; i +=1){
-        //入力値を先頭から読み込み、一文字ずつ特殊な文字が入っているか
-        if(specialAlphas.indexOf(text[i]) == 1){
-          console.log("これはピンイン")
-          return true
-        }
-      }
-      return false
-      console.log("これはあああ")
-    },
-
-    // 1音節の拼音文字列を英字文字列に変換する。
+    // 拼音文字列を英字文字列に変換する。
     convertPinyinTextToAlphabetText: function(pinyinText) {
       var letters = pinyinText.split("");
       for (let i in letters) {
@@ -253,9 +248,18 @@ export default {
       return letters.join("");
     },
 
+    convertFullWidthToHalfWidth(pinyinText) {
+      return pinyinText
+        .replace(/[Ａ-Ｚａ-ｚ]/g, function(s) {
+          return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        })
+        .replace(/[　]/g, " ")
+        .replace(/[‘’]/g, "'");
+    },
+
     // 1音節の英字文字列を近似音に変換する。
     getKanaOfAlphabet: function(alphabet) {
-      let kana = alphabetKana[alphabet];
+      let kana = alphabetKana[alphabet.toLowerCase()];
       if (kana == null) {
         return this.UNKNOWN;
       }
