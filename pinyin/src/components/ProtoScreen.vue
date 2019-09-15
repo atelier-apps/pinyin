@@ -100,16 +100,16 @@ export default {
     translate: function() {
 
       if (this.isEmpty) {
-        console.log("空なので結果を初期値にして弾いた")
+        //console.log("空なので結果を初期値にして弾いた")
         this.result = {};
         return;
       }
       if (this.isOverLimit) {
-        console.log("文字数で弾いた")
+        //console.log("文字数で弾いた")
         return;
       }
       if (this.isCharacterTypeError) {
-        console.log("文字種類で弾いた")
+        //console.log("文字種類で弾いた")
         return;
       }
 
@@ -139,7 +139,7 @@ export default {
         let resultData = [];
         resultData.push(syllables);
         this.result = resultData;
-        console.log("英字のみなのでクライアント側で解決した")
+        //console.log("英字のみなのでクライアント側で解決した")
         return;
       }
 
@@ -151,7 +151,7 @@ export default {
         this.addAlphabetInfo(resultData);
         this.result = resultData;
         scrollTo(0, 0);
-        console.log("漢字交じりなのでサーバ側で解決した")
+        // console.log("漢字交じりなのでサーバ側で解決した")
       })
     },
 
