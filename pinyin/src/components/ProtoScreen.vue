@@ -1,26 +1,32 @@
 <template>
 <div class="page">
-  <div class="header">
+  <div class="header" ref="header">
     <div class="app-name"> {{app_name}}</div>
     <div class="header-content">
       <div class="header-message"> {{headerMsg}}</div>
-      <input class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isCharacterTypeError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <input id="id_search_box" class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isCharacterTypeError}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
         <span v-if="isCharacterTypeError" id="id_charactertype"> {{errorMsg}}</span>
         <span v-if="isOverLimit" id="id_overlimit"> {{lengthErrorMsg}}</span>
-
       </div>
     </div>
   </div>
-  <div class="main">
-    <div v-if="resultLength>1" class="main-message">{{caseMsg}}</div>
+  <div class="main" v-bind:style="{'margin-top':mainMargin}">
+    <div v-if="unsupported" class="main-message">
+      <img src="@/assets/unsupported.png" class="warning-image" />
+      <div>{{unsupportedMsg}}</div>
+    </div>
+    <div v-if="resultLength>1" class="main-message">
+      <img src="@/assets/case.png" class="warning-image" />
+      <div>{{caseMsg}}</div>
+    </div>
     <div v-if="resultLength==0">
       <ResultArea v-bind:result="null" />
     </div>
     <div v-for="r in result">
       <ResultArea v-bind:result="r" />
     </div>
-    <div　class="note">{{policyMsg}}</div>
+    <div class="note" v-for="msg in policyMsg">{{msg}}</div>
   </div>
   <div class="footer">{{copyright}}</div>
 </div>
@@ -49,17 +55,27 @@ export default {
     TYPE_PINYIN: "P",
     TYPE_KANJI: "K",
     TYPE_OTHER: "O",
-    headerMsg: '▼中国人名を漢字か英字で入力',
-    caseMsg: 'この名前は字の意味によって表記と読み方が変わります。',
+    headerMsg: '▼中国人名を簡体字か英字で入力',
+    caseMsg: 'この名前は字の意味によって表記や読み方が変わります',
     target: '',
-    errorMsg2: '%s文字以下で入力してください。',
+    errorMsg2: '%s音節以下で入力してください。',
     errorMsg: '漢字か英字を入力してください。',
     result: {},
     inputPlaceholder: "鲁迅",
-    policyMsg: "日本名の読み仮名は正統な漢音を採用しており、通俗的な読み方とは異なる可能性があります。例えば、「毛沢東」は通俗的な読み方では「モウタクトウ」ですが、正統な漢音では「ボウタクトウ」となります。",
+    policyMsg: [
+      "入力対応している漢字は、中国大陸における常用字2500字（簡体字）のみです。",
+      "本システムは「中国人名は音読みの漢音で読む」という日本の伝統に従い、漢音を日本名として採用しています。" +
+      "ただし、漢音による読み方は通俗的な読み方とは異なる可能性があります。たとえば「毛沢東」は通俗的にはモウタクトウと読み習わされていますが、" +
+      "法則上はボウタクトウと読まれるべきものであり、本システムもその読み方を採用しています。",
+      "現地読みの近似音については「中国語音節表記ガイドライン［平凡社版］」に準拠しています。 (http://cn.heibonsha.co.jp/)",
+      "本システムを利用することによって発生した損害について、当方はいかなる責任も負いません。また、出力内容の正確性や妥当性等は保証していません。"
+    ],
+    unsupportedMsg: "一部の漢字は未対応です",
     copyright: "Developed by 日曜大工",
     inputStack: [],
-    delayTimeMs: 500
+    delayTimeMs: 500,
+    unsupported: false,
+    mainMargin: "0",
   }),
   computed: {
     lengthErrorMsg() {
@@ -84,7 +100,14 @@ export default {
   components: {
     ResultArea
   },
+  mounted() {
+    window.addEventListener('resize', this.setMainMargin);
+    this.setMainMargin();
+  },
   methods: {
+    setMainMargin: function() {
+      this.mainMargin = this.$refs.header.clientHeight + 'px';
+    },
     checkInput: function() {
       // 入力が終わってdelayTimeMs秒経過するまで待つための処理
       this.inputStack.push(1);
@@ -100,18 +123,17 @@ export default {
     translate: function() {
 
       if (this.isEmpty) {
-        //console.log("空なので結果を初期値にして弾いた")
         this.result = {};
         return;
       }
       if (this.isOverLimit) {
-        //console.log("文字数で弾いた")
         return;
       }
       if (this.isCharacterTypeError) {
-        //console.log("文字種類で弾いた")
         return;
       }
+
+      scrollTo(0, 0);
 
       let syllables = this.syllables;
 
@@ -139,7 +161,6 @@ export default {
         let resultData = [];
         resultData.push(syllables);
         this.result = resultData;
-        //console.log("英字のみなのでクライアント側で解決した")
         return;
       }
 
@@ -149,9 +170,8 @@ export default {
         syllableString: JSON.stringify(syllables),
       }).then(resultData => {
         this.addAlphabetInfo(resultData);
+        this.unsupported = this.hasUnsupportedCharacter(resultData);
         this.result = resultData;
-        scrollTo(0, 0);
-        // console.log("漢字交じりなのでサーバ側で解決した")
       })
     },
 
@@ -280,6 +300,17 @@ export default {
           resultData[i][j]["pinyin_kana"] = pinyinKana;
         }
       }
+    },
+    // 未対応の漢字があるならtrue、そうでなければfalseを返す
+    hasUnsupportedCharacter: function(resultData) {
+      for (let i in resultData) {
+        for (let j in resultData[i]) {
+          if (resultData[i][j]["type"] == this.TYPE_KANJI && resultData[i][j]["kanji"] == "") {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
 
@@ -295,7 +326,7 @@ export default {
   top: 0;
   left: 0;
   width: 100%;
-  box-shadow: 0.2rem 0.2rem 1rem 0.2rem rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0.4rem 0.1rem rgba(0, 0, 0, 0.1);
 }
 
 .app-name {
@@ -314,14 +345,19 @@ export default {
 }
 
 .main {
-  padding: 10rem 0;
+  padding: 3rem 0;
   box-sizing: border-box;
   margin: 1rem auto;
   width: 80%;
 }
 
 .main-message {
-  padding: 2rem 0 0 0;
+  padding: 1rem;
+  margin: 0 auto 3rem auto;
+  text-align: center;
+  color: #808080;
+  background-color: #F3F3F3;
+  border-radius: 1rem;
 }
 
 .form {
@@ -347,8 +383,14 @@ export default {
   height: 1rem;
 }
 
+.warning-image {
+  margin: 0;
+  height: 3rem;
+}
+
 .note {
   font-size: 0.8rem;
+  color: #909090;
 }
 
 .note::before {
@@ -376,11 +418,11 @@ export default {
   }
 
   .header-content {
-    width: 30%;
+    width: 40%;
   }
 
   .main {
-    width: 30%;
+    width: 40%;
   }
 }
 </style>

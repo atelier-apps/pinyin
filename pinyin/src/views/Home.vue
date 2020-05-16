@@ -1,6 +1,6 @@
 <template>
 <div class="home">
-  <ProtoScreen app_name="爱 don't know" />
+  <ProtoScreen app_name="中国人名変換" />
 </div>
 </template>
 

@@ -53,29 +53,29 @@ export default {
       let conditions = [];
       for (let i in r) {
         if (r[i]["meaning"] != null) {
-          conditions.push(r[i]["original"] + "：" + r[i]["meaning"]);
+          conditions.push(r[i]["original"] + "⇒" + r[i]["meaning"]);
         }
       }
       if (conditions.length > 0) {
-        return conditions.join("｜");
+        return "▼" + conditions.join("、") + " の意味の場合";
       }
       return "";
     }
   },
   data: () => ({
     resultPlaceholder: [{
-        "kanji": "魯",
-        "kanji_kana": "ロ",
-        "pinyin": "lǔ",
-        "alphabet": "lu",
-        "pinyin_kana": "ルー"
+        'kanji': '魯',
+        'kanji_kana': 'ロ',
+        'pinyin': 'lǔ',
+        'alphabet': 'lu',
+        'pinyin_kana': 'ルー'
       },
       {
-        "kanji": "迅",
-        "kanji_kana": "ジン",
-        "pinyin": "xùn",
-        "alphabet": "xun",
-        "pinyin_kana": "シュン"
+        'kanji': '迅',
+        'kanji_kana': 'ジン',
+        'pinyin': 'xùn',
+        'alphabet': 'xun',
+        'pinyin_kana': 'シュン'
       }
     ]
   }),
@@ -86,7 +86,7 @@ export default {
 <style scoped>
 .result-area {
   width: 100%;
-  margin: 4em auto;
+  margin: 0 auto 3rem auto;
   text-align: left;
 }
 
