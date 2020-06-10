@@ -60,7 +60,6 @@ export default {
     headerMsg: '▼中国人名を簡体字か英字で入力',
     caseMsg: 'この名前は字の意味によって表記や読み方が変わります',
     target: '',
-    errorMsg3: '漢字か英字のどちらか一方のみ入力してください。',
     errorMsg2: '%s音節以下で入力してください。',
     errorMsg: '漢字か英字を入力してください。',
     result: {},
@@ -81,13 +80,13 @@ export default {
     mainMargin: "0",
   }),
   computed: {
-    lengthErrorMsg() {
+    lengthErrorMsg () {
       return this.errorMsg2.replace("%s", this.MAX_LENGTH)
     },
-    isCharacterTypeError() {
+    isCharacterTypeError () {
       return !this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target)).match(/^[' A-Za-z\u3005-\u3006\u30e0-\u9fcf]*$/)
     },
-    isKanjiAlphabetError() {
+    isKanjiAlphabetError () {
       //ここを編集
       const str = this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target))
       const regex1 = RegExp("[\u3005-\u3006\u30e0-\u9fcf]");
@@ -144,9 +143,6 @@ export default {
         return;
       }
       if (this.isCharacterTypeError) {
-        return;
-      }
-      if (this.isKanjiAlphabetError) {
         return;
       }
 
