@@ -5,7 +5,7 @@
     <div class="header-content">
       <div class="header-message"> {{headerMsg}}</div>
       <!-- //ここを直す -->
-      <input id="id_search_box" class="form" v-on:input="checkInput" v-bind:class="[{ 'error-input' : isCharacterTypeError}, { 'error-input' : isKanjiAlphabetError}]" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
+      <input id="id_search_box" class="form" v-on:input="checkInput" v-bind:class="{ 'error-input' : isCharacterTypeError || isKanjiAlphabetError || isOverLimit}" v-model="target" :placeholder="[[inputPlaceholder]]" spellcheck="false">
       <div class="error-area">
         <span v-if="isCharacterTypeError" id="id_charactertype"> {{errorMsg}}</span>
         <span v-if="isKanjiAlphabetError" id="id_kanjialphabet"> {{errorMsg3}}</span>
@@ -89,9 +89,14 @@ export default {
     },
     isKanjiAlphabetError() {
       //ここを編集
-      var includeKanji = this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target)).match(/^[\u3005-\u3006\u30e0-\u9fcf)]*$/)
-      var includeAlphabet = this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target)).match(/^[A-Za-z]*$/)
-      return includeKanji==true && includeAlphabet==true
+      const str = this.convertPinyinTextToAlphabetText(this.convertFullWidthToHalfWidth(this.target))
+      const regex1 = RegExp("[\u3005-\u3006\u30e0-\u9fcf]");
+      const regex2 = RegExp("[A-Za-z]");
+
+      var includeKanji = regex1.test(str)
+      var includeAlphabet = regex2.test(str)
+      return includeKanji && includeAlphabet
+
     },
     syllables: function() {
       return this.splitBySyllable(this.target);
