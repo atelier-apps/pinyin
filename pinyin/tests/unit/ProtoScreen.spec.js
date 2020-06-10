@@ -88,7 +88,5 @@ describe('ProtoScreen', () => {
     wrapper.find(idSearchBox).setValue(word)
     expect(wrapper.find(classErrorInput).exists()).toBe(isDisplay)
     expect(wrapper.find(idCharacterType).exists()).toBe(isDisplay)
-    console.log(expect(wrapper.find(classErrorInput).exists()).toBe(isDisplay))
-    console.log(expect(wrapper.find(idCharacterType).exists()).toBe(isDisplay))
   }
 })
